@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
 	"log"
 	"net"
 	"net/http"
@@ -20,6 +21,7 @@ func NewKAServer() *KAServer {
 	}
 	k.router = martini.NewRouter()
 	k.martini = martini.New()
+	k.martini.Use(render.Renderer())
 	k.martini.Action(k.router.Handle)
 	k.martini.MapTo(k.router, (*martini.Routes)(nil))
 	return k
@@ -33,13 +35,15 @@ func (k *KAServer) Run() error {
 		return errors.New(fmt.Sprintf("Could not start on %s. Err: %s", addr, err.Error()))
 	}
 
-	k.router.Get("/", func() (int, string) {
-		return 200, "Serve me"
-	})
+	k.router.Get("/", k.Index)
 	k.router.Get("/game", k.StartGame)
 
 	log.Printf("Starting Server at %s", addr)
 	return http.Serve(l, k.martini)
+}
+
+func (k *KAServer) Index(r render.Render) {
+	r.HTML(http.StatusOK, "index", nil)
 }
 
 func (k *KAServer) StartGame() {
